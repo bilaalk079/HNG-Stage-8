@@ -1,98 +1,92 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 💳 Paystack Wallet Service: Backend Stage 8 Submission
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## 🌟 Project Overview
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+This is a robust backend service designed to handle core wallet operations: **deposits** via Paystack, **transfers** between users, and comprehensive **authentication** using both user-based **JSON Web Tokens (JWT)** and service-based **API Keys**.
 
-## Description
+### Key Features
+* **Paystack Integration:** Deposits handled via Paystack, utilizing mandatory, secure webhook processing for successful crediting.
+* **Dual Authentication:** Supports **JWT** (from Google Sign-in) for users and **API Keys** for service-to-service access.
+* **API Key Management:** Includes endpoints for key creation, listing, rollover, and managing permissions/limits (max 5 active keys).
+* **Atomic Transfers:** Wallet-to-wallet transfers are implemented to ensure atomicity and integrity.
+* **Idempotency:** Webhook processing ensures no double-crediting occurs.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+---
 
-## Project setup
+## ⚙️ Configuration & Environment Variables
 
-```bash
-$ npm install
-```
+The service relies on the following environment variables. **Note the adjustments required for deployment on Render, particularly the callback and application URLs.**
 
-## Compile and run the project
+### Required Variables
 
-```bash
-# development
-$ npm run start
+| Variable Name | Example Value (Local) | **Render/Deployment Value** | Notes |
+| :--- | :--- | :--- | :--- |
+| **`PORT`** | `3000` | `3000` | Port the app listens on. |
+| **`APP_URL`** | `http://localhost:3000` | `https://<Your Render URL>` | **CRITICAL:** The public, secure URL of your deployed service. |
+| **`DATABASE_URL`** | `postgres://user:pass@host:port/db...` | *(Your full Neon connection string)* | **CRITICAL:** Your complete, secure database URL. |
+| **`JWT_SECRET`** | `fff02ddf28a7e996f48949fd8f1ffcd8ef0533e92bf1fa7` | **(Keep this value)** | Used for signing JWTs. |
+| **`GOOGLE_CLIENT_ID`** | `
+| **`GOOGLE_CLIENT_SECRET`** |
+| **`GOOGLE_CALLBACK_URL`** | `http://localhost:3google/callback` | `https://<Your Render URL>/auth/google/callback` | **CRITICAL:** Must match the *Authorized Redirect URI* in your Google Console. |
+| **`PAYSTACK_SECRET_KEY`** | 
+| **`PAYSTACK_PUBLIC_KEY`** | `
 
-# watch mode
-$ npm run start:dev
+#
+## 🔒 Authentication & Access Control
 
-# production mode
-$ npm run start:prod
-```
+The service uses two authentication methods:
 
-## Run tests
+### 1. JSON Web Token (JWT)
+* **Method:** Passed as `Authorization: Bearer <token>`.
+* **Source:** Issued after successful Google Sign-in.
+* **Access:** Full access to all wallet operations.
 
-```bash
-# unit tests
-$ npm run test
+### 2. API Keys
+* **Method:** Passed as `x-api-key: <key>`.
+* **Source:** Generated by the user/owner via `/keys/create`.
+* **Access:** Limited by explicitly assigned permissions (`read`, `deposit`, `transfer`).
+* **Rules:** Must be active (not expired/revoked) and have the necessary permission for the requested endpoint.
 
-# e2e tests
-$ npm run test:e2e
+---
 
-# test coverage
-$ npm run test:cov
-```
+## 🌐 API Endpoints Specification
 
-## Deployment
+### 1. Google Authentication (JWT)
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+| Method | Path | Description |
+| :--- | :--- | :--- |
+| `GET` | `/auth/google` | Initiates the Google OAuth flow. |
+| `GET` | `/auth/google/callback` | Handles the OAuth redirect and **returns the JWT**. |
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 2. API Key Management
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
+| Method | Path | Auth | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/keys/create` | JWT | Generates a new key with specified permissions (`deposit`, `transfer`, `read`) and expiry (`1H`, `1D`, `1M`, `1Y`). Max 5 active keys. |
+| `GET` | `/keys` | JWT | **(Extra Route)** Retrieves a list of all API keys (active, expired, revoked) for the user. |
+| `POST` | `/keys/rollover` | JWT | Creates a new key with the same permissions as a specified **expired** key. |
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### 3. Wallet Operations
 
-## Resources
+| Method | Path | Auth Required | Permissions | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/wallet/balance` | JWT or API Key | `read` | Retrieves the user's current wallet balance. |
+| `GET` | `/wallet/transactions` | JWT or API Key | `read` | Retrieves the transaction history. |
+| `POST` | `/wallet/deposit` | JWT or API Key | `deposit` | Initiates a Paystack transaction and returns the `authorization_url`. |
+| `POST` | `/wallet/transfer` | JWT or API Key | `transfer` | Executes an atomic wallet-to-wallet transfer. Requires sufficient balance. |
 
-Check out a few resources that may come in handy when working with NestJS:
+### 4. Paystack & Verification
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+| Method | Path | Auth Required | Action |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/wallet/paystack/webhook` | **None** (Security via Signature) | **MANDATORY:** Receives transaction updates from Paystack. **VALIDATES SIGNATURE** using `PAYSTACK_SECRET_KEY` and **CREDITS WALLET** upon success. |
+| `GET` | `/wallet/deposit/{reference}/status` | JWT or API Key | Optional endpoint to check transaction status. **Does NOT credit the wallet.** |
 
-## Support
+---
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## 🛡️ Security & Integrity
 
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+* **Paystack Signature Validation:** The webhook handler securely validates the incoming request using the `PAYSTACK_SECRET_KEY` to prevent fraudulent wallet crediting.
+* **Atomicity:** All wallet transfers are wrapped in database transactions to ensure that money is never partially deducted or credited.
+* **Idempotency:** Webhook logic prevents re-processing the same successful transaction reference, ensuring no double-credit.
+* **API Key Limits:** Strict enforcement of 5 active keys per user and automatic rejection of expired or permission-deficient keys.
