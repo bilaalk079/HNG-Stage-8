@@ -7,6 +7,7 @@ import {
   ApiBadRequestResponse,
   ApiUnauthorizedResponse,
   ApiNotFoundResponse,
+  ApiParam,
 } from '@nestjs/swagger';
 import { ErrorResponseDto } from '../auth/dto/auth-response.dto';
 import { ApiKeyResponseDto } from './dto/api-key-res.dto';
@@ -76,4 +77,47 @@ export const ApiKeysDocs = {
     type: ErrorResponseDto,
   }),
 ),
+RevokeApiKey: () => applyDecorators(
+    ApiOperation({
+      summary: 'Revoke an API key',
+      description: 'Revokes a key. The key will no longer be valid for authentication.',
+    }),
+    ApiParam({ name: 'id', description: 'API key ID to revoke' }),
+    ApiResponse({
+      status: 200,
+      description: 'API key revoked successfully',
+    }),
+    ApiNotFoundResponse({
+      description: 'API key not found',
+      type: ErrorResponseDto,
+    }),
+    ApiBadRequestResponse({
+      description: 'API key is already revoked',
+      type: ErrorResponseDto,
+    }),
+    ApiUnauthorizedResponse({
+      description: 'JWT token missing or invalid',
+      type: ErrorResponseDto,
+    }),
+  ),
+
+  DeleteApiKey: () => applyDecorators(
+    ApiOperation({
+      summary: 'Delete an API key permanently',
+      description: 'Deletes an API key. This action is irreversible.',
+    }),
+    ApiParam({ name: 'id', description: 'API key ID to delete' }),
+    ApiResponse({
+      status: 200,
+      description: 'API key deleted successfully',
+    }),
+    ApiNotFoundResponse({
+      description: 'API key not found',
+      type: ErrorResponseDto,
+    }),
+    ApiUnauthorizedResponse({
+      description: 'JWT token missing or invalid',
+      type: ErrorResponseDto,
+    }),
+  ),
 };

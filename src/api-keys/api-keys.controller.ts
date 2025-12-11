@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Req, Get } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req, Get, Param, Delete } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiKeysService } from './api-keys.service';
 import { ApiKeysDocs } from './api-key.doc';
@@ -26,5 +26,16 @@ export class ApiKeysController {
   @ApiKeysDocs.GetAllKeys()
   async getAllKeys(@Req() req): Promise<ApiKeyItemDto[]> {
     return this.apiKeysService.getAllKeys(req.user.userId);
+  }
+  @Post(':id/revoke')
+  @ApiKeysDocs.RevokeApiKey()
+  async revokeKey(@Req() req, @Param('id') keyId: string) {
+    return this.apiKeysService.revokeKey(req.user.userId, keyId);
+  }
+
+  @Delete(':id')
+  @ApiKeysDocs.DeleteApiKey()
+  async deleteKey(@Req() req, @Param('id') keyId: string) {
+    return this.apiKeysService.deleteKey(req.user.userId, keyId);
   }
 }

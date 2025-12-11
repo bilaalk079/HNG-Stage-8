@@ -135,6 +135,55 @@ export class ApiKeysService {
   }));
 }
 
+async revokeKey(userId: string, keyId: string) {
+    const [apiKey] = await db
+      .select()
+      .from(schema.apiKeys)
+      .where(
+        and(
+          eq(schema.apiKeys.id, keyId),
+          eq(schema.apiKeys.userId, userId)
+        )
+      );
+
+    if (!apiKey) {
+      throw new NotFoundException('API key not found');
+    }
+
+    if (apiKey.isRevoked) {
+      throw new BadRequestException('API key is already revoked');
+    }
+
+    await db
+      .update(schema.apiKeys)
+      .set({ isRevoked: true, updatedAt: new Date() })
+      .where(eq(schema.apiKeys.id, keyId));
+
+    return { status: 'success', message: 'API key revoked successfully' };
+  }
+
+  async deleteKey(userId: string, keyId: string) {
+    const [apiKey] = await db
+      .select()
+      .from(schema.apiKeys)
+      .where(
+        and(
+          eq(schema.apiKeys.id, keyId),
+          eq(schema.apiKeys.userId, userId)
+        )
+      );
+
+    if (!apiKey) {
+      throw new NotFoundException('API key not found');
+    }
+
+    await db
+      .delete(schema.apiKeys)
+      .where(eq(schema.apiKeys.id, keyId));
+
+    return { status: 'success', message: 'API key deleted successfully' };
+  }
+
 private maskApiKey(key: string): string {
   if (key.length <= 8) return key;
   const lastFour = key.slice(-4);

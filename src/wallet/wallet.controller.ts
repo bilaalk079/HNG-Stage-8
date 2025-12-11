@@ -1,4 +1,3 @@
-// src/wallet/wallet.controller.ts (FIXED)
 import {
   Controller,
   Post,
@@ -53,23 +52,44 @@ export class WalletController {
 @Post('paystack/webhook')
 @WalletDocs.PaystackWebhook()
 async handleWebhook(
-  @Req() req: RawBodyRequest<Request>,
+  @Req() req: any,
   @Headers('x-paystack-signature') signature: string,
+  @Body() body: any,
 ): Promise<WebhookResponseDto> {
   if (!signature) {
     throw new BadRequestException('Missing signature');
   }
+  let rawBody: string;
+  let payload: any;
 
-  const rawBody = (req as any).rawBody.toString();
-  const isValid = this.paystackService.verifyWebhookSignature(rawBody, signature);
-
-  if (!isValid) {
-    throw new BadRequestException('Invalid signature');
+  try {
+    if (req.rawBody) {
+      rawBody = typeof req.rawBody === 'string' ? req.rawBody : req.rawBody.toString('utf8');
+      payload = JSON.parse(rawBody);
+    } else if (typeof body === 'string') {
+      rawBody = body;
+      payload = JSON.parse(body);
+    } else if (typeof body === 'object' && body !== null) {
+      payload = body;
+      rawBody = JSON.stringify(body);
+    } else {
+      throw new BadRequestException('Invalid webhook body format');
+    }
+    const isValid = this.paystackService.verifyWebhookSignature(rawBody, signature);
+    
+    if (!isValid) {
+      throw new BadRequestException('Invalid signature');
+    }
+    await this.walletService.handleWebhook(payload);
+    return { status: true };
+    
+  } catch (error) {
+    console.error('Webhook processing error:', error);
+    if (error instanceof BadRequestException) {
+      throw error;
+    }
+    throw new BadRequestException('Failed to process webhook');
   }
-
-  const payload = JSON.parse(rawBody);
-  await this.walletService.handleWebhook(payload);
-  return { status: true };
 }
 
   @Get('deposit/:reference/status')
