@@ -13,9 +13,9 @@ import {
 } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 import { PaystackService } from './paystack.service';
-import { 
-  DepositDto, 
-  TransferDto, 
+import {
+  DepositDto,
+  TransferDto,
   DepositResponseDto,
   TransferResponseDto,
   BalanceResponseDto,
@@ -39,38 +39,43 @@ export class WalletController {
   @UseGuards(JwtOrApiKeyGuard, PermissionGuard) // CORRECT ORDER: Auth first, then permission
   @RequirePermission('deposit')
   @WalletDocs.Deposit()
-  async deposit(@Req() req, @Body() dto: DepositDto): Promise<DepositResponseDto> {
-    return this.walletService.initiateDeposit(req.user.userId, dto, req.user.email);
+  async deposit(
+    @Req() req,
+    @Body() dto: DepositDto,
+  ): Promise<DepositResponseDto> {
+    return this.walletService.initiateDeposit(
+      req.user.userId,
+      dto,
+      req.user.email,
+    );
   }
 
-  @Post('paystack/webhook')
-  @WalletDocs.PaystackWebhook()
-  async handleWebhook(
-    @Req() req: RawBodyRequest<Request>,
-    @Headers('x-paystack-signature') signature: string,
-  ): Promise<WebhookResponseDto> {
-    if (!signature) {
-      throw new BadRequestException('Missing signature');
-    }
-
-    const rawBody = req.body!.toString();
-    const isValid = this.paystackService.verifyWebhookSignature(rawBody, signature);
-
-    if (!isValid) {
-      throw new BadRequestException('Invalid signature');
-    }
-
-    const payload = JSON.parse(rawBody);
-    return this.walletService.handleWebhook(payload);
+@Post('paystack/webhook')
+@WalletDocs.PaystackWebhook()
+async handleWebhook(
+  @Req() req: RawBodyRequest<Request>,
+  @Headers('x-paystack-signature') signature: string,
+): Promise<WebhookResponseDto> {
+  if (!signature) {
+    throw new BadRequestException('Missing signature');
   }
+
+  const rawBody = (req as any).rawBody.toString();
+  const isValid = this.paystackService.verifyWebhookSignature(rawBody, signature);
+
+  if (!isValid) {
+    throw new BadRequestException('Invalid signature');
+  }
+
+  const payload = JSON.parse(rawBody);
+  await this.walletService.handleWebhook(payload);
+  return { status: true };
+}
 
   @Get('deposit/:reference/status')
   @UseGuards(JwtOrApiKeyGuard)
   @WalletDocs.GetDepositStatus()
-  async getDepositStatus(
-    @Req() req,
-    @Param('reference') reference: string,
-  ) {
+  async getDepositStatus(@Req() req, @Param('reference') reference: string) {
     return this.walletService.getDepositStatus(reference, req.user.userId);
   }
 
@@ -86,7 +91,10 @@ export class WalletController {
   @UseGuards(JwtOrApiKeyGuard, PermissionGuard)
   @RequirePermission('transfer')
   @WalletDocs.Transfer()
-  async transfer(@Req() req, @Body() dto: TransferDto): Promise<TransferResponseDto> {
+  async transfer(
+    @Req() req,
+    @Body() dto: TransferDto,
+  ): Promise<TransferResponseDto> {
     return this.walletService.transfer(req.user.userId, dto);
   }
 

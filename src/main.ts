@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import * as bodyParser from 'body-parser'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -9,7 +10,7 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: true, // Allow all origins in development
+    origin: true, 
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-paystack-signature'],
@@ -67,7 +68,10 @@ async function bootstrap() {
     },
   });
 
-  
+  app.use(
+  '/wallet/paystack/webhook',
+  bodyParser.raw({ type: '*/*' }),
+);
   await app.listen(3000);
   console.log('🚀 Application is running on: http://localhost:3000');
   console.log('📚 Swagger documentation: http://localhost:3000/api');
